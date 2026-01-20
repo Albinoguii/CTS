@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REINTECH | Dimensionador CTS Vertical</title>
+    <style>
+        :root { 
+            --blue-reintech: #1e3c72; 
+            --orange-reintech: #e67e22;
+            --gray-bg: #f4f7f9; 
+        }
+
+        /* --- ESTILO DA TELA DE INICIALIZAÇÃO (SPLASH SCREEN) --- */
+        #splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.8s ease, visibility 0.8s;
+        }
+
+        .splash-logo {
+            width: 250px;
+            margin-bottom: 20px;
+            animation: fadeInOut 2s infinite ease-in-out;
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 4px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .loader-progress {
+            width: 0%;
+            height: 100%;
+            background: var(--blue-reintech);
+            animation: load 2.5s forwards cubic-bezier(0, 0, 0.2, 1);
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0.5; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes load { 0% { width: 0%; } 100% { width: 100%; } }
+
+        /* --- ESTILO DO CONTEÚDO PRINCIPAL --- */
+        body { 
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            background: var(--gray-bg); 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+        }
+
+        #main-content { 
+            display: none; 
+            width: 100%; 
+            max-width: 800px; 
+        }
+
+        .glass { 
+            background: white; 
+            border-top: 8px solid var(--blue-reintech);
+            border-radius: 15px; 
+            padding: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h2 { 
+            color: var(--blue-reintech); 
+            text-align: center; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            margin-bottom: 25px;
+        }
+
+        .main-label { display: block; font-weight: bold; font-size: 11px; color: var(--blue-reintech); text-transform: uppercase; margin-bottom: 8px; }
+        input[type="number"] { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 20px; font-weight: bold; color: var(--blue-reintech); box-sizing: border-box; }
+
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; margin-top: 20px; }
+        .filter-card { background: #fff; border: 2px solid #eee; padding: 15px; border-radius: 12px; transition: 0.3s; }
+        .filter-card.selected { border-color: var(--blue-reintech); background: #f0f4ff; }
+        
+        .switch-area { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #eee; padding-top: 10px; margin-top: 10px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px; }
+        .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--orange-reintech); }
+        input:checked + .slider:before { transform: translateX(16px); }
+
+        .result-panel { margin-top: 20px; border-top: 2px solid #eee; padding-top: 20px; }
+        .vertical-stack { display: flex; flex-direction: column-reverse; align-items: center; gap: 15px; }
+        .stage-box { width: 100%; max-width: 450px; background: var(--blue-reintech); color: white; padding: 20px; border-radius: 8px; text-align: center; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        .stage-box::after { content: '↑'; position: absolute; top: -28px; left: 50%; transform: translateX(-50%); color: var(--orange-reintech); font-weight: bold; font-size: 24px; }
+        .stage-box:last-child::after { content: 'SAÍDA DE AR (LIMPO)'; font-size: 10px; top: -20px; color: #27ae60; }
+        .stage-box:first-child::before { content: 'ENTRADA DE AR (SUJO)'; position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%); color: #e74c3c; font-size: 10px; font-weight: bold; }
+
+        .badge { background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 11px; margin-top: 8px; display: inline-block; border: 1px solid rgba(255,255,255,0.3); }
+    </style>
+</head>
+<body onload="inicializar()">
+
+<div id="splash-screen">
+    <img src="logo.png" alt="REINTECH" class="splash-logo" onerror="this.src='https://reintech.com.br/wp-content/uploads/2021/08/logo-reintech.png'">
+    <div class="loader-bar">
+        <div class="loader-progress"></div>
+    </div>
+    <p style="color: var(--blue-reintech); font-size: 12px; margin-top: 15px; font-weight: bold; letter-spacing: 1px;">CARREGANDO DIMENSIONADOR DE UTAs...</p>
+</div>
+
+<div id="main-content">
+    <div class="glass">
+        <h2>REINTECH - Dimensionamento CTS</h2>
+
+        <div class="input-group">
+            <label class="main-label">Vazão Total do Projeto (m³/h)</label>
+            <input type="number" id="vazao" value="8000" oninput="calcular()">
+        </div>
+
+        <div class="filter-grid">
+            <div class="filter-card">
+                <label><input type="checkbox" class="filtro" data-nome="F9" data-cap="3400" onchange="calcular()" checked> F9</label>
+                <div class="switch-area"><span>Usar Fino?</span><label class="switch"><input type="checkbox" class="use-fino" onchange="calcular()" checked><span class="slider"></span></label></div>
+            </div>
+            <div class="filter-card">
+                <label><input type="checkbox" class="filtro" data-nome="H13" data-cap="4000" onchange="calcular()"> H13</label>
+                <div class="switch-area"><span>Usar Fino?</span><label class="switch"><input type="checkbox" class="use-fino" onchange="calcular()" checked><span class="slider"></span></label></div>
+            </div>
+            <div class="filter-card">
+                <label><input type="checkbox" class="filtro" data-nome="H14" data-cap="3600" onchange="calcular()"> H14</label>
+                <div class="switch-area"><span>Usar Fino?</span><label class="switch"><input type="checkbox" class="use-fino" onchange="calcular()" checked><span class="slider"></span></label></div>
+            </div>
+            <div class="filter-card">
+                <label><input type="checkbox" class="filtro" data-nome="Carvão" data-cap="4000" onchange="calcular()"> Carvão</label>
+                <div class="switch-area"><span>Usar Fino?</span><label class="switch"><input type="checkbox" class="use-fino" onchange="calcular()" checked><span class="slider"></span></label></div>
+            </div>
+        </div>
+
+        <div class="result-panel">
+            <div class="vertical-stack" id="stack"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function inicializar() {
+        // Lógica de Splash Screen idêntica à da Tabela
+        setTimeout(function() {
+            const splash = document.getElementById('splash-screen');
+            const content = document.getElementById('main-content');
+            
+            splash.style.opacity = '0';
+            setTimeout(() => {
+                splash.style.display = 'none';
+                content.style.display = 'block';
+                calcular(); // Executa o cálculo inicial
+            }, 800);
+        }, 2500);
+    }
+
+    function calcular() {
+        const vazao = parseFloat(document.getElementById('vazao').value) || 0;
+        const checkboxes = document.querySelectorAll('.filtro:checked');
+        const stack = document.getElementById('stack');
+        
+        stack.innerHTML = "";
+
+        if (vazao === 0 || checkboxes.length === 0) {
+            stack.innerHTML = "<p style='color:#bbb; margin-top:20px;'>Selecione os filtros acima para calcular o trem de filtragem.</p>";
+            return;
+        }
+
+        checkboxes.forEach(cb => {
+            const card = cb.closest('.filter-card');
+            card.classList.add('selected');
+            
+            const capP = parseFloat(cb.getAttribute('data-cap'));
+            const nome = cb.getAttribute('data-nome');
+            const permitirFino = card.querySelector('.use-fino').checked;
+            
+            let qP = 0; let qF = 0;
+            if (!permitirFino) {
+                qP = Math.ceil(vazao / capP);
+            } else {
+                qP = Math.floor(vazao / capP);
+                let resto = vazao % capP;
+                if (resto > 0) {
+                    if (resto <= (capP / 2)) qF = 1;
+                    else qP++;
+                }
+            }
+
+            const capFinal = (qP * capP) + (qF * (capP/2));
+
+            const stage = document.createElement('div');
+            stage.className = "stage-box";
+            stage.innerHTML = `
+                <div style="font-size: 10px; color: var(--orange-reintech); margin-bottom: 5px; font-weight: bold; letter-spacing: 1px;">FILTRO ${nome}</div>
+                <div style="font-size: 20px; font-weight: bold;">${qP} Padrão ${qF > 0 ? '+ 1 Fino' : ''}</div>
+                <div class="badge">Capacidade: ${capFinal.toLocaleString()} m³/h</div>
+            `;
+            stack.appendChild(stage);
+        });
+
+        document.querySelectorAll('.filtro:not(:checked)').forEach(cb => {
+            cb.closest('.filter-card').classList.remove('selected');
+        });
+    }
+</script>
+
+</body>
+</html>
